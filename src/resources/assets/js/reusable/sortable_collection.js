@@ -6,7 +6,7 @@ const CHANGE_SORT_CRITERIA = 'sortable_collection/change_sort_criteria'
 
 
 export default class SortableCollection {
-    constructor({name, key_prop='id', sort_by=null, sorts=new Map()}) {
+    constructor({name, key_prop='id', sort_by=null, sorts=[]}) {
         if (!sort_by) {
             sort_by = key_prop
         }

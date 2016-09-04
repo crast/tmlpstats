@@ -328,6 +328,16 @@ Api.LocalReport = {
     */
     getCourseList: function(params, callback, errback) {
         return apiCall('LocalReport.getCourseList', params, (callback || null), (errback || null));
+    },
+
+    /*
+    Center Quarter
+    Parameters:
+      center: Center
+      quarter: Quarter
+    */
+    getCenterQuarter: function(params, callback, errback) {
+        return apiCall('LocalReport.getCenterQuarter', params, (callback || null), (errback || null));
     }
 };
 Api.Scoreboard = {
@@ -440,6 +450,17 @@ Api.TeamMember = {
     */
     allForCenter: function(params, callback, errback) {
         return apiCall('TeamMember.allForCenter', params, (callback || null), (errback || null));
+    },
+
+    /*
+    Bulk update weekly reporting info (GITW/TDO)
+    Parameters:
+      center: Center
+      reportingDate: date
+      updates: array
+    */
+    bulkStashWeeklyReporting: function(params, callback, errback) {
+        return apiCall('TeamMember.bulkStashWeeklyReporting', params, (callback || null), (errback || null));
     }
 };
 Api.UserProfile = {

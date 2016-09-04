@@ -1,5 +1,5 @@
 import SortableCollection, { compositeKey } from '../../reusable/sortable_collection'
-import { LoadingMultiState } from '../../reusable/reducers'
+import { LoadingMultiState, InlineBulkWork } from '../../reusable/reducers'
 
 export const classListSorts = [
     {
@@ -27,3 +27,5 @@ export const teamMembersCollection = new SortableCollection({
 })
 
 export const classListLoad = new LoadingMultiState('class_list/initialLoadState')
+export const weeklyReportingSave = new LoadingMultiState('class_list/saveWeeklyReporting')
+export const weeklyReportingData = new InlineBulkWork('class_list/weeklyReporting')

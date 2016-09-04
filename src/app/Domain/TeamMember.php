@@ -8,6 +8,8 @@ use TmlpStats as Models;
  */
 class TeamMember extends ParserDomain
 {
+    public $meta = [];
+
     protected static $validProperties = [
         'id' => [
             'owner' => 'teamMember',
@@ -88,17 +90,17 @@ class TeamMember extends ParserDomain
             'type' => 'bool',
         ],
         'withdrawCode' => [
-            'owner' => 'applicationData',
+            'owner' => 'teamMemberData',
             'type' => 'WithdrawCode',
             'assignId' => true,
         ],
         'comment' => [
-            'owner' => 'applicationData',
+            'owner' => 'teamMemberData',
             'type' => 'string',
         ],
     ];
 
-    public static function fromModel($teamMemberData, $teamMember = null, $person = null)
+    public static function fromModel($teamMemberData, $teamMember = null, $person = null, $ignore = null)
     {
         if ($teamMember === null) {
             $teamMember = $teamMemberData->teamMember;
@@ -109,6 +111,9 @@ class TeamMember extends ParserDomain
 
         $obj = new static();
         foreach (static::$validProperties as $k => $v) {
+            if ($ignore && array_get($ignore, $k, false)) {
+                continue;
+            }
             switch ($v['owner']) {
                 case 'person':
                     $obj->$k = $person->$k;

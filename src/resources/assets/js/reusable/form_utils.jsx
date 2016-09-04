@@ -1,6 +1,10 @@
 import React, { PropTypes } from 'react'
+import { connect } from 'react-redux'
 import { Form, Field, actions as formActions } from 'react-redux-form'
+import _get from 'lodash/get'
 import { Link } from 'react-router'
+
+var omit = require('lodash/omit')
 
 export { Form, Field, formActions }
 
@@ -32,7 +36,23 @@ export class SimpleField extends React.Component {
     }
 }
 
-export class AddOneLink extends React.Component {
+export class SimpleFormGroup extends React.PureComponent {
+    static defaultProps = {
+        labelClass: 'col-md-2',
+        divClass: 'col-md-8'
+    }
+    render() {
+        const { label, labelClass, divClass } = this.props
+        return (
+            <div className="form-group">
+                <label className={labelClass + ' control-label'}>{label}</label>
+                <div className={divClass}>{this.props.children}</div>
+            </div>
+        )
+    }
+}
+
+export class AddOneLink extends React.PureComponent {
     render() {
 
         var label = this.props.label
@@ -89,3 +109,60 @@ export class SimpleSelect extends React.Component {
         )
     }
 }
+
+const customFieldMSP = (state, props) => {
+    const modelValue = _get(state, props.model)
+    return {modelValue}
+}
+export const connectCustomField = connect(customFieldMSP)
+
+
+// Boolean select
+export class BooleanSelectView extends React.Component {
+    static defaultProps = {
+        labels: ['N', 'Y'],
+        className: 'form-control'
+    }
+    _renderOmit = ['modelValue', 'emptyChoice', 'labels', 'dispatch', 'model', 'params']
+
+    componentWillMount() {
+        this.onChange = this.onChange.bind(this)
+    }
+
+    render() {
+        const { modelValue, emptyChoice, labels } = this.props
+        const rest = omit(this.props, this._renderOmit)
+        const sValue = this.selectValue(modelValue)
+
+        var empty
+        if (emptyChoice) {
+            empty = <option value="">{emptyChoice}</option>
+        }
+
+        return (
+            <select value={sValue} onChange={this.onChange} {...rest}>
+                {empty}
+                <option value="0">{labels[0]}</option>
+                <option value="1">{labels[1]}</option>
+            </select>
+        )
+    }
+
+    // return the value for the select box
+    selectValue(modelValue) {
+        if (modelValue === false || modelValue === '0' || modelValue === '') {
+            return '0'
+        } else if (modelValue) {
+            return '1'
+        }
+        return ''
+    }
+
+    onChange(e) {
+        const v = e.target.value
+        const newValue = (v === '')? null : ((v === '1') ? true : false)
+        this.props.dispatch(formActions.change(this.props.model, newValue))
+    }
+}
+export const BooleanSelect = connectCustomField(BooleanSelectView)
+

@@ -169,3 +169,20 @@ export class MessagesComponent extends React.Component {
         )
     }
 }
+
+export class Alert extends React.PureComponent {
+    static defaultProps = {
+        alert: 'info',
+        icon: 'info-sign'
+    }
+    render() {
+        const { alert, icon, children } = this.props
+
+        return (
+            <div className={'alert alert-' + alert}>
+                <span className={'glyphicon glyphicon-' + icon} aria-hidden="true"></span>
+                {children}
+            </div>
+        )
+    }
+}

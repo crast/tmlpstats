@@ -11,44 +11,93 @@ use TmlpStats\Domain;
  */
 class TeamMember extends AuthenticatedApiBase
 {
-    public function allForCenter(Models\Center $center, Carbon $reportingDate, $includeInProgress = false)
+    private static $omitGitwTdo = ['tdo' => true, 'gitw' => true];
+
+    private function relevantReport(Models\Center $center, Carbon $reportingDate)
     {
-
-        $allTeamMembers = [];
-
         $quarter = Models\Quarter::getQuarterByDate($reportingDate, $center->region);
 
         // Get the last stats report in order to pre-populate the class list effectively
-        $lastReport = Models\StatsReport::byCenter($center)
+
+        return Models\StatsReport::byCenter($center)
             ->byQuarter($quarter)
             ->official()
             ->where('reporting_date', '<=', $reportingDate)
             ->orderBy('reporting_date', 'desc')
             ->first();
+    }
 
-        if ($lastReport) {
-            // If the last report happens to be the same week as this week, we can include applicationData.
-            $includeData = ($lastReport->reportingDate->eq($reportingDate));
-            foreach (App::make(LocalReport::class)->getClassList($lastReport) as $tmd) {
-                if ($includeData) {
-                    $domain = Domain\TeamMember::fromModel($tmd, $tmd->teamMember);
-                } else {
-                    $domain = Domain\TeamMember::fromModel(null, $tmd->teamMember);
-                }
-                $allTeamMembers[$domain->id] = $domain;
-            }
-        }
+    public function allForCenter(Models\Center $center, Carbon $reportingDate, $includeInProgress = false)
+    {
+
+        $allTeamMembers = [];
 
         if ($includeInProgress) {
             $submissionData = App::make(SubmissionData::class);
             $found = $submissionData->allForType($center, $reportingDate, Domain\TeamMember::class);
             foreach ($found as $domain) {
-                // TODO decide if we want to merge with team member or just clobber like we're heading towards.
                 $allTeamMembers[$domain->id] = $domain;
+                $domain->meta['localChanges'] = true;
             }
         }
 
-        return array_values($allTeamMembers);
+        $lastReport = $this->relevantReport($center, $reportingDate);
+        if ($lastReport) {
+            // If the last report happens to be the same week as this week, we can include GITW/TDO.
+            $includeData = ($lastReport->reportingDate->eq($reportingDate));
+            $ignore = ($includeData) ? null : self::$omitGitwTdo;
+            foreach (App::make(LocalReport::class)->getClassList($lastReport) as $tmd) {
+                // it's a small optimization, but prevent creating domain if we have an existing SubmissionData version
+                if (!array_key_exists($tmd->teamMemberId, $allTeamMembers)) {
+                    $domain = Domain\TeamMember::fromModel($tmd, $tmd->teamMember, null, $ignore);
+                    $allTeamMembers[$domain->id] = $domain;
+                } else {
+                    $allTeamMembers[$tmd->teamMemberId]->meta['hasReportData'] = true;
+                }
+            }
+        }
+
+        return $allTeamMembers;
+    }
+
+    public function stash(Models\Center $center, Carbon $reportingDate, array $data)
+    {
+        $this->assertCan('submitStats', $center);
+
+        $submissionData = App::make(SubmissionData::class);
+        $teamMemberId = array_get($data, 'id', null);
+        if (is_numeric($teamMemberId)) {
+            $teamMemberId = intval($teamMemberId);
+        }
+
+        if ($teamMemberId !== null && $teamMemberId > 0) {
+            $application = Models\TmlpRegistration::findOrFail($teamMemberId);
+            $domain = Domain\TeamMember::fromModel(null, $application);
+            $domain->updateFromArray($data, ['incomingQuarter']);
+        } else {
+            if (!$teamMemberId) {
+                $teamMemberId = $submissionData->generateId();
+                $data['id'] = $teamMemberId;
+            }
+            $domain = Domain\TeamMember::fromArray($data);
+        }
+        $submissionData->store($center, $reportingDate, $domain);
+    }
+
+    public function bulkStashWeeklyReporting(Models\Center $center, Carbon $reportingDate, array $updates)
+    {
+        $this->assertCan('submitStats', $center);
+        $submissionData = App::make(SubmissionData::class);
+        $sourceData = $this->allForCenter($center, $reportingDate, true);
+        foreach ($updates as $item) {
+            $updatedDomain = Domain\TeamMember::fromArray($item, ['id', 'gitw', 'tdo']);
+            $existing = array_get($sourceData, $updatedDomain->id, null);
+            $existing->gitw = $updatedDomain->gitw;
+            $existing->tdo = $updatedDomain->tdo;
+            $submissionData->store($center, $reportingDate, $existing);
+        }
+
+        return [];
     }
 
     public function create(array $data)

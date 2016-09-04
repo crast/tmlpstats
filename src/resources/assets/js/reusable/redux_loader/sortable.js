@@ -1,18 +1,19 @@
 import { objectAssign } from './ponyfill'
 import SortableCollection from './sortable_collection'
-import { rebindActionCreators } from './redux_loaders'
+import { ReduxLoader, rebindActionCreators } from './base'
 
-export function sortable_wrapper(sortable_opts) {
-    if (!sortable_opts) {
-        sortable_opts = {}
+const SC_ACTIONS = ['replaceItem', 'replaceCollection', 'changeSortCriteria', 'iterItems']
+
+export default class SortableReduxLoader extends ReduxLoader {
+    constructor(opts) {
+        super(opts)
+
+        var sc = this.sc = new SortableCollection(objectAssign({name: opts.prefix}, opts.sortable))
+
+        objectAssign(this, rebindActionCreators(SC_ACTIONS, sc))
     }
 
-    return (opts) => {
-        const s_opts = objectAssign({}, sortable_opts, {name: opts.prefix})
-        const collection = new SortableCollection(s_opts)
-        return {
-            dataReducer: collection.reducer(),
-            actionCreators: rebindActionCreators(['replaceItem', 'replaceCollection', 'changeSortCriteria'], collection)
-        }
+    dataReducer(opts) {
+        return this.sc.reducer(opts.collection_reducer)
     }
 }
