@@ -133,7 +133,7 @@ export class ReduxFriendlyScoreboard {
      */
     updateGameField(sb, game, field, value) {
         var gameData = sb.games[game]
-        if (gameData[field] != value) {
+        if (gameData[field] !== value) {
             const newGameData = this._updateGameOnly(gameData, {[field]: value})
             const newGames = objectAssign({}, sb.games, {[game]: newGameData})
 
