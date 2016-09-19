@@ -25,6 +25,8 @@
     </div>
     @endif
 
+    <a href="/admin/regions/{{ $region->abbrLower() }}">Go to new region admin page</a> (beta)
+
     <h3>Centers</h3>
     <div class="select-action-pill">
         <ul class="nav nav-pills">
