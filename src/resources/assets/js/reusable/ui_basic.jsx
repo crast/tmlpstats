@@ -183,3 +183,29 @@ export class Alert extends React.PureComponent {
         )
     }
 }
+
+export class Panel extends React.PureComponent {
+    static defaultProps = {
+        color: 'default',
+        headingLevel: 'h3'
+    }
+
+    render() {
+        const { color, heading, headingLevel, children } = this.props
+
+        // doing an <h3 is simply syntactic sugar for react.createElement('h3', {propName:propVal, ...}, ...children)
+        // So by directly using react.createElement we can create any heading from h1 to h6.
+        const panelHeading = React.createElement(headingLevel, {className: 'panel-title'}, heading)
+
+        return (
+            <div className={'panel panel-' + color}>
+                <div className="panel-heading">
+                    {panelHeading}
+                </div>
+                <div className="panel-body">
+                    {children}
+                </div>
+            </div>
+        )
+    }
+}
