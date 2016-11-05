@@ -13,20 +13,26 @@ $reportingDate = $context->getReportingDate();
 $regions = TmlpStats\Region::isGlobal()->get();
 $currentRegion = $context->getGlobalRegion(false);
 $currentCenter = $context->getCenter(true);
+
+$crd = null;
+$showNextQtrAccountabilities = false;
+if ($currentCenter !== null && $reportingDate != null) {
+    $crd = TmlpStats\Encapsulations\CenterReportingDate::ensure($currentCenter, $reportingDate);
+    $showNextQtrAccountabilities = $crd->canShowNextQtrAccountabilities();
+}
+
 $reports = null;
 $centers = [];
 if ($currentRegion != null) {
-    $quarter = TmlpStats\Quarter::getQuarterByDate($reportingDate, $currentRegion);
+    $quarter = $crd? $crd->getQuarter() : TmlpStats\Quarter::getQuarterByDate($reportingDate, $currentRegion);
 
     $reports = TmlpStats\GlobalReport::between($quarter->getQuarterStartDate($currentCenter), $quarter->getQuarterEndDate($currentCenter))
                                  ->orderBy('reporting_date', 'desc')
                                  ->get();
     $centers = TmlpStats\Center::byRegion($currentRegion)->orderBy('name')->get();
-
 }
 
 $reportingDateString = ($reportingDate != null) ? $reportingDate->toDateString() : null;
-
 $showNavCenterSelect = isset($showNavCenterSelect) ? $showNavCenterSelect : false;
 ?>
 <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -52,6 +58,12 @@ $showNavCenterSelect = isset($showNavCenterSelect) ? $showNavCenterSelect : fals
                             <a href="{{ route('validate') }}">Validate</a>
                         </li>
                         @endcan
+
+                        @if ($showNextQtrAccountabilities)
+                            <li>
+                                <a href="{{ action('CenterController@nextQtrAccountabilities', ['abbr' => $currentCenter->abbrLower()]) }}">Accountabilities</a>
+                            </li>
+                        @endif
 
                         @can ('showNewSubmissionUi', $currentCenter)
                         <li {!! Request::is('submission') ? 'class="active"' : '' !!}>
